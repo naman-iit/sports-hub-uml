@@ -80,8 +80,8 @@ export const generateEventSummary = async (
       keyPlayers,
       interestingFacts
     };
-  } catch (error) {
-    console.error('Error generating event summary:', error);
+  } catch (error: any) {
+    console.error('Error generating event summary:', error.response);
     throw new Error('Failed to generate event summary');
   }
 }; 

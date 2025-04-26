@@ -2,6 +2,7 @@ export interface Event {
   id: string;
   name: string;
   url: string;
+  sportsHubId: string;
   images: {
     url: string;
     width: number;
@@ -32,4 +33,4 @@ export interface Event {
       };
     }[];
   };
-} 
+}

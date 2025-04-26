@@ -1,34 +1,47 @@
-"use client"
+"use client";
 
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Event } from "./models/Event"
-import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { CalendarIcon, MapPinIcon, TicketIcon, SparklesIcon, Loader2Icon, XIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useState, useEffect } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/sidebar";
+import { Event } from "./models/Event";
+import Image from "next/image";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  CalendarIcon,
+  MapPinIcon,
+  TicketIcon,
+  SparklesIcon,
+  Loader2Icon,
+  XIcon,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 interface EventsData {
   nba: Event[];
@@ -43,6 +56,14 @@ interface EventSummary {
   interestingFacts: string[];
 }
 
+let arr = [
+  "680c26636d1ece3628938651",
+  "680c800c6d1ece3628938b6d",
+  "680c80446d1ece3628938b6e",
+  "680c80ad6d1ece3628938b71",
+  "680c80b76d1ece3628938b72",
+];
+
 function EventCard({ event }: { event: Event }) {
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [summary, setSummary] = useState<EventSummary | null>(null);
@@ -50,33 +71,44 @@ function EventCard({ event }: { event: Event }) {
   const [error, setError] = useState<string | null>(null);
 
   const eventDate = new Date(event.dates.start.localDate);
-  const formattedDate = eventDate.toLocaleDateString('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric' 
+  const formattedDate = eventDate.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
   });
-  
-  const formattedTime = event.dates.start.localTime 
-    ? new Date(`2000-01-01T${event.dates.start.localTime}`).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit' 
-      })
+
+  const formattedTime = event.dates.start.localTime
+    ? new Date(`2000-01-01T${event.dates.start.localTime}`).toLocaleTimeString(
+        "en-US",
+        {
+          hour: "numeric",
+          minute: "2-digit",
+        }
+      )
     : null;
 
   const fetchSummary = async () => {
+    const token = localStorage.getItem("token");
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/openai/summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://localhost:8080/api/openai/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-access-token": token || "",
+        },
         body: JSON.stringify({
-          homeTeam: event.name.split(' vs ')[0],
-          awayTeam: event.name.split(' vs ')[1],
+          homeTeam: event.name.split(" vs ")[0],
+          awayTeam: event.name.split(" vs ")[1],
           date: event.dates.start.localDate,
           venue: event._embedded?.venues?.[0]?.name,
-          sportType: event.name.includes('NBA') ? 'NBA' : event.name.includes('MLB') ? 'MLB' : 'NFL'
-        })
+          sportType: event.name.includes("NBA")
+            ? "NBA"
+            : event.name.includes("MLB")
+            ? "MLB"
+            : "NFL",
+        }),
       });
 
       if (!response.ok) {
@@ -91,8 +123,10 @@ function EventCard({ event }: { event: Event }) {
       setSummary(data);
       setShowSummaryDialog(true);
     } catch (error) {
-      console.error('Error fetching summary:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate summary');
+      console.error("Error fetching summary:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to generate summary"
+      );
     } finally {
       setLoading(false);
     }
@@ -103,18 +137,22 @@ function EventCard({ event }: { event: Event }) {
       <Card className="overflow-hidden transition-all hover:shadow-lg border-2 hover:border-primary/50">
         <div className="relative h-48 w-full">
           <Image
-            src={event.images[0]?.url || '/placeholder-event.jpg'}
+            src={event.images[0]?.url || "/placeholder-event.jpg"}
             alt={event.name}
             fill
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
           <Badge className="absolute top-3 right-3 bg-primary/90 hover:bg-primary text-white font-medium">
-            {event.priceRanges?.[0] ? `From $${event.priceRanges[0].min}` : 'Tickets Available'}
+            {event.priceRanges?.[0]
+              ? `From $${event.priceRanges[0].min}`
+              : "Tickets Available"}
           </Badge>
         </div>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-bold line-clamp-2">{event.name}</CardTitle>
+          <CardTitle className="text-lg font-bold line-clamp-2">
+            {event.name}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pb-2">
           <div className="space-y-3">
@@ -122,18 +160,25 @@ function EventCard({ event }: { event: Event }) {
               <CalendarIcon className="h-4 w-4 mt-0.5 text-primary" />
               <div>
                 <p className="text-sm font-medium">{formattedDate}</p>
-                {formattedTime && <p className="text-xs text-muted-foreground">{formattedTime}</p>}
+                {formattedTime && (
+                  <p className="text-xs text-muted-foreground">
+                    {formattedTime}
+                  </p>
+                )}
               </div>
             </div>
-            
+
             {event._embedded?.venues?.[0] && (
               <div className="flex items-start gap-2">
                 <MapPinIcon className="h-4 w-4 mt-0.5 text-primary" />
                 <div>
-                  <p className="text-sm font-medium">{event._embedded.venues[0].name}</p>
+                  <p className="text-sm font-medium">
+                    {event._embedded.venues[0].name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {event._embedded.venues[0].city.name}
-                    {event._embedded.venues[0].state?.name && `, ${event._embedded.venues[0].state.name}`}
+                    {event._embedded.venues[0].state?.name &&
+                      `, ${event._embedded.venues[0].state.name}`}
                   </p>
                 </div>
               </div>
@@ -148,9 +193,9 @@ function EventCard({ event }: { event: Event }) {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-2 pt-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="w-full hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors"
             onClick={() => fetchSummary()}
             disabled={loading}
@@ -167,13 +212,15 @@ function EventCard({ event }: { event: Event }) {
               </>
             )}
           </Button>
-          <a 
-            href={event.url}
-            target="_blank"
+          <a
+            href={`/seat-selection?eventId=${event.sportsHubId}`}
             rel="noopener noreferrer"
             className="w-full"
           >
-            <Button className="w-full bg-primary hover:bg-primary/90 text-white" variant="default">
+            <Button
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+              variant="default"
+            >
               <TicketIcon className="h-4 w-4 mr-1" />
               Get Tickets
             </Button>
@@ -188,7 +235,9 @@ function EventCard({ event }: { event: Event }) {
               <div className="p-2 rounded-full bg-primary/10">
                 <SparklesIcon className="h-5 w-5 text-primary" />
               </div>
-              <DialogTitle className="text-xl font-bold">{event.name}</DialogTitle>
+              <DialogTitle className="text-xl font-bold">
+                {event.name}
+              </DialogTitle>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
               <CalendarIcon className="h-3.5 w-3.5" />
@@ -208,14 +257,18 @@ function EventCard({ event }: { event: Event }) {
               )}
             </div>
           </DialogHeader>
-          
+
           {summary && (
             <div className="space-y-6 py-4">
               <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-muted/50">
-                <h3 className="text-lg font-semibold text-primary">{summary.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{summary.summary}</p>
+                <h3 className="text-lg font-semibold text-primary">
+                  {summary.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {summary.summary}
+                </p>
               </div>
-              
+
               {summary.keyPlayers.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-1">
@@ -224,14 +277,18 @@ function EventCard({ event }: { event: Event }) {
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {summary.keyPlayers.map((player, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1"
+                      >
                         {player}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
-              
+
               {summary.interestingFacts.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium flex items-center gap-1">
@@ -240,7 +297,10 @@ function EventCard({ event }: { event: Event }) {
                   </h4>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     {summary.interestingFacts.map((fact, index) => (
-                      <li key={index} className="flex items-start gap-2 p-2 bg-muted/20 rounded-md">
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 p-2 bg-muted/20 rounded-md"
+                      >
                         <span className="text-primary mt-1">•</span>
                         <span>{fact}</span>
                       </li>
@@ -250,18 +310,17 @@ function EventCard({ event }: { event: Event }) {
               )}
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowSummaryDialog(false)}
               className="border-primary/20 hover:bg-primary/5 hover:text-primary"
             >
               Close
             </Button>
-            <a 
-              href={event.url}
-              target="_blank"
+            <a
+              href={`/seat-selection?eventId=${event.sportsHubId}`}
               rel="noopener noreferrer"
             >
               <Button className="bg-primary hover:bg-primary/90 text-white">
@@ -309,15 +368,20 @@ function EventCardSkeleton() {
   );
 }
 
-function EventsGrid({ events }: { events: Event[] }) {
+function EventsGrid({ events: eventsList }: { events: Event[] }) {
+  const events = eventsList.map((event, index) => ({
+    ...event,
+    sportsHubId: arr[Math.floor(index % arr.length)],
+  }));
+  console.log(events);
   const [currentPage, setCurrentPage] = useState(1);
   const eventsPerPage = 9; // 3x3 grid
 
   // Filter out past events
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
-  
-  const upcomingEvents = events.filter(event => {
+
+  const upcomingEvents = events.filter((event) => {
     const eventDate = new Date(event.dates.start.localDate);
     eventDate.setHours(0, 0, 0, 0);
     return eventDate >= currentDate;
@@ -326,7 +390,10 @@ function EventsGrid({ events }: { events: Event[] }) {
   // Calculate pagination
   const totalPages = Math.ceil(upcomingEvents.length / eventsPerPage);
   const startIndex = (currentPage - 1) * eventsPerPage;
-  const paginatedEvents = upcomingEvents.slice(startIndex, startIndex + eventsPerPage);
+  const paginatedEvents = upcomingEvents.slice(
+    startIndex,
+    startIndex + eventsPerPage
+  );
 
   if (upcomingEvents.length === 0) {
     return (
@@ -341,7 +408,7 @@ function EventsGrid({ events }: { events: Event[] }) {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -349,13 +416,13 @@ function EventsGrid({ events }: { events: Event[] }) {
           <EventCard key={event.id} event={event} />
         ))}
       </div>
-      
+
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-6">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -376,7 +443,9 @@ function EventsGrid({ events }: { events: Event[] }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
           >
             Next
@@ -388,38 +457,48 @@ function EventsGrid({ events }: { events: Event[] }) {
 }
 
 export default function Page() {
-  const [eventsData, setEventsData] = useState<EventsData>({ nba: [], mlb: [], nfl: [] });
+  const [eventsData, setEventsData] = useState<EventsData>({
+    nba: [],
+    mlb: [],
+    nfl: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('nba');
+  const [activeTab, setActiveTab] = useState("nba");
 
   useEffect(() => {
     const fetchEvents = async () => {
+      const token = localStorage.getItem("token");
       try {
-        console.log('Fetching events...');
-        const response = await fetch('http://localhost:5000/api/events');
+        const response = await fetch("http://localhost:8080/api/events", {
+          headers: {
+            "x-access-token": token || "",
+          },
+        });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log('Received events data:', data);
-        
+        console.log("Received events data:", data);
+
         // Validate the data structure
-        if (!data || typeof data !== 'object') {
-          throw new Error('Invalid data format received');
+        if (!data || typeof data !== "object") {
+          throw new Error("Invalid data format received");
         }
 
         // Ensure each sport has an array, even if empty
         const formattedData = {
           nba: Array.isArray(data.nba) ? data.nba : [],
           mlb: Array.isArray(data.mlb) ? data.mlb : [],
-          nfl: Array.isArray(data.nfl) ? data.nfl : []
+          nfl: Array.isArray(data.nfl) ? data.nfl : [],
         };
-        console.log('Formatted events data:', formattedData);
+        console.log("Formatted events data:", formattedData);
         setEventsData(formattedData);
       } catch (error) {
-        console.error('Error fetching events:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch events');
+        console.error("Error fetching events:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch events"
+        );
       } finally {
         setLoading(false);
       }
@@ -454,9 +533,9 @@ export default function Page() {
               <Skeleton className="h-8 w-64" />
               <Skeleton className="h-5 w-96" />
             </div>
-            
+
             <Skeleton className="h-10 w-full" />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, index) => (
                 <EventCardSkeleton key={index} />
@@ -497,10 +576,7 @@ export default function Page() {
             <p className="text-sm text-muted-foreground mt-1 max-w-md text-center">
               {error}
             </p>
-            <Button 
-              className="mt-4" 
-              onClick={() => window.location.reload()}
-            >
+            <Button className="mt-4" onClick={() => window.location.reload()}>
               Try Again
             </Button>
           </div>
@@ -531,21 +607,36 @@ export default function Page() {
         </header>
         <div className="flex flex-1 flex-col gap-6 p-6">
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">Sports Events Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Sports Events Dashboard
+            </h1>
             <p className="text-muted-foreground">
               Browse upcoming NBA, MLB, and NFL events
             </p>
           </div>
-          
-          <Tabs defaultValue="nba" className="w-full" onValueChange={setActiveTab}>
+
+          <Tabs
+            defaultValue="nba"
+            className="w-full"
+            onValueChange={setActiveTab}
+          >
             <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="nba" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger
+                value="nba"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 NBA
               </TabsTrigger>
-              <TabsTrigger value="mlb" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger
+                value="mlb"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 MLB
               </TabsTrigger>
-              <TabsTrigger value="nfl" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger
+                value="nfl"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 NFL
               </TabsTrigger>
             </TabsList>

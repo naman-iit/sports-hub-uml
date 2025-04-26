@@ -43,15 +43,11 @@ const data = {
       items: [
         {
           title: "Home",
-          url: "#",
+          url: "/dashboard",
         },
         {
           title: "Manage Bookings",
-          url: "#",
-        },
-        {
-          title: "Payments",
-          url: "#",
+          url: "/bookings",
         },
       ],
     },
