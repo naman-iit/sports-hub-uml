@@ -18,6 +18,14 @@ router.post(
       // Fetch all seats with their details
       const seats = await Seat.find({ _id: { $in: seatIds } });
 
+      // check if seats are available
+      const isAvailable = seats.every((seat) => seat.isAvailable);
+      if (!isAvailable) {
+        return res.status(400).json({
+          success: false,
+          message: "Seats are not available",
+        });
+      }
       // get booked seats from seatMap
       const seatMap = await SeatMap.findById(eventId);
       if (!seatMap) {
@@ -36,6 +44,7 @@ router.post(
         totalAmount,
         user: userId,
         bookedAt: new Date(),
+        status: "booked",
       });
 
       // Update seat availability
@@ -80,5 +89,40 @@ router.get("/", authorizeUser, async (req: Request, res: Response) => {
     });
   }
 });
+
+// add cancel booking route
+router.post(
+  "/cancel-booking",
+  authorizeUser,
+  async (req: Request, res: Response) => {
+    try {
+      const { bookingId } = req.body;
+
+      const booking = await Booking.findById(bookingId);
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      booking.status = "cancelled";
+      await booking.save();
+
+      // Update seat availability
+      await Seat.updateMany(
+        { _id: { $in: booking.seats } },
+        { $set: { isAvailable: true } }
+      );
+
+      res.json({
+        success: true,
+        message: "Booking cancelled successfully",
+      });
+    } catch (error: unknown) {
+      console.error("Booking error:", error);
+    }
+  }
+);
 
 export default router;

@@ -56,6 +56,14 @@ interface EventSummary {
   interestingFacts: string[];
 }
 
+let arr = [
+  "680c26636d1ece3628938651",
+  "680c800c6d1ece3628938b6d",
+  "680c80446d1ece3628938b6e",
+  "680c80ad6d1ece3628938b71",
+  "680c80b76d1ece3628938b72",
+];
+
 function EventCard({ event }: { event: Event }) {
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [summary, setSummary] = useState<EventSummary | null>(null);
@@ -80,12 +88,16 @@ function EventCard({ event }: { event: Event }) {
     : null;
 
   const fetchSummary = async () => {
+    const token = localStorage.getItem("token");
     setLoading(true);
     setError(null);
     try {
       const response = await fetch("http://localhost:8080/api/openai/summary", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-access-token": token || "",
+        },
         body: JSON.stringify({
           homeTeam: event.name.split(" vs ")[0],
           awayTeam: event.name.split(" vs ")[1],
@@ -201,8 +213,7 @@ function EventCard({ event }: { event: Event }) {
             )}
           </Button>
           <a
-            href={event.url}
-            target="_blank"
+            href={`/seat-selection?eventId=${event.sportsHubId}`}
             rel="noopener noreferrer"
             className="w-full"
           >
@@ -308,7 +319,10 @@ function EventCard({ event }: { event: Event }) {
             >
               Close
             </Button>
-            <a href={event.url} target="_blank" rel="noopener noreferrer">
+            <a
+              href={`/seat-selection?eventId=${event.sportsHubId}`}
+              rel="noopener noreferrer"
+            >
               <Button className="bg-primary hover:bg-primary/90 text-white">
                 <TicketIcon className="h-4 w-4 mr-1" />
                 Get Tickets
@@ -354,15 +368,20 @@ function EventCardSkeleton() {
   );
 }
 
-function EventsGrid({ events }: { events: Event[] }) {
+function EventsGrid({ events: eventsList }: { events: Event[] }) {
+  const events = eventsList.map((event, index) => ({
+    ...event,
+    sportsHubId: arr[Math.floor(index % arr.length)],
+  }));
+  console.log(events);
   const [currentPage, setCurrentPage] = useState(1);
   const eventsPerPage = 9; // 3x3 grid
 
   // Filter out past events
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
-  
-  const upcomingEvents = events.filter(event => {
+
+  const upcomingEvents = events.filter((event) => {
     const eventDate = new Date(event.dates.start.localDate);
     eventDate.setHours(0, 0, 0, 0);
     return eventDate >= currentDate;
@@ -371,7 +390,10 @@ function EventsGrid({ events }: { events: Event[] }) {
   // Calculate pagination
   const totalPages = Math.ceil(upcomingEvents.length / eventsPerPage);
   const startIndex = (currentPage - 1) * eventsPerPage;
-  const paginatedEvents = upcomingEvents.slice(startIndex, startIndex + eventsPerPage);
+  const paginatedEvents = upcomingEvents.slice(
+    startIndex,
+    startIndex + eventsPerPage
+  );
 
   if (upcomingEvents.length === 0) {
     return (
@@ -394,13 +416,13 @@ function EventsGrid({ events }: { events: Event[] }) {
           <EventCard key={event.id} event={event} />
         ))}
       </div>
-      
+
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-6">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -421,7 +443,9 @@ function EventsGrid({ events }: { events: Event[] }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
           >
             Next
@@ -440,7 +464,7 @@ export default function Page() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('nba');
+  const [activeTab, setActiveTab] = useState("nba");
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -455,20 +479,20 @@ export default function Page() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log('Received events data:', data);
-        
+        console.log("Received events data:", data);
+
         // Validate the data structure
-        if (!data || typeof data !== 'object') {
-          throw new Error('Invalid data format received');
+        if (!data || typeof data !== "object") {
+          throw new Error("Invalid data format received");
         }
 
         // Ensure each sport has an array, even if empty
         const formattedData = {
           nba: Array.isArray(data.nba) ? data.nba : [],
           mlb: Array.isArray(data.mlb) ? data.mlb : [],
-          nfl: Array.isArray(data.nfl) ? data.nfl : []
+          nfl: Array.isArray(data.nfl) ? data.nfl : [],
         };
-        console.log('Formatted events data:', formattedData);
+        console.log("Formatted events data:", formattedData);
         setEventsData(formattedData);
       } catch (error) {
         console.error("Error fetching events:", error);
@@ -590,8 +614,12 @@ export default function Page() {
               Browse upcoming NBA, MLB, and NFL events
             </p>
           </div>
-          
-          <Tabs defaultValue="nba" className="w-full" onValueChange={setActiveTab}>
+
+          <Tabs
+            defaultValue="nba"
+            className="w-full"
+            onValueChange={setActiveTab}
+          >
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger
                 value="nba"

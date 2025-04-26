@@ -8,6 +8,7 @@ export interface IBooking extends Document {
   bookedAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  status: string;
 }
 
 const BookingSchema = new Schema<IBooking>(
@@ -39,14 +40,12 @@ const BookingSchema = new Schema<IBooking>(
       type: Date,
       default: Date.now,
     },
+    status: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
-);
-
-// Optionally, ensure a user can't double-book the same seat
-BookingSchema.index(
-  { seatMap: 1, seats: 1, user: 1 },
-  { unique: true, partialFilterExpression: { seats: { $exists: true } } }
 );
 
 export const Booking = model<IBooking>("Booking", BookingSchema);

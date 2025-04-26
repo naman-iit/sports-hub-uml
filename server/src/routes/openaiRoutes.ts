@@ -6,6 +6,7 @@ const router = express.Router();
 // Generate a summary for a sports event
 router.post("/summary", authorizeUser, async (req, res) => {
   try {
+    console.log("Generating summary for event:", req.body);
     const summary = await generateEventSummary(
       req.body.homeTeam,
       req.body.awayTeam,
