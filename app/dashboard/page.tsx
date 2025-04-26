@@ -218,7 +218,7 @@ function EventCard({ event }: { event: Event }) {
       </Card>
 
       <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
-        <DialogContent className="sm:max-w-md overflow-hidden">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-full bg-primary/10">
@@ -355,25 +355,79 @@ function EventCardSkeleton() {
 }
 
 function EventsGrid({ events }: { events: Event[] }) {
-  if (events.length === 0) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 9; // 3x3 grid
+
+  // Filter out past events
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+  
+  const upcomingEvents = events.filter(event => {
+    const eventDate = new Date(event.dates.start.localDate);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= currentDate;
+  });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(upcomingEvents.length / eventsPerPage);
+  const startIndex = (currentPage - 1) * eventsPerPage;
+  const paginatedEvents = upcomingEvents.slice(startIndex, startIndex + eventsPerPage);
+
+  if (upcomingEvents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <div className="rounded-full bg-muted p-4 mb-4">
           <TicketIcon className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-medium">No events found</h3>
+        <h3 className="text-lg font-medium">No upcoming events found</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Check back later for upcoming events
+          Check back later for new events
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {events.map((event) => (
-        <EventCard key={event.id} event={event} />
-      ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {paginatedEvents.map((event) => (
+          <EventCard key={event.id} event={event} />
+        ))}
+      </div>
+      
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(page)}
+                className="w-8 h-8 p-0"
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -386,6 +440,7 @@ export default function Page() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('nba');
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -400,7 +455,21 @@ export default function Page() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setEventsData(data);
+        console.log('Received events data:', data);
+        
+        // Validate the data structure
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid data format received');
+        }
+
+        // Ensure each sport has an array, even if empty
+        const formattedData = {
+          nba: Array.isArray(data.nba) ? data.nba : [],
+          mlb: Array.isArray(data.mlb) ? data.mlb : [],
+          nfl: Array.isArray(data.nfl) ? data.nfl : []
+        };
+        console.log('Formatted events data:', formattedData);
+        setEventsData(formattedData);
       } catch (error) {
         console.error("Error fetching events:", error);
         setError(
@@ -521,8 +590,8 @@ export default function Page() {
               Browse upcoming NBA, MLB, and NFL events
             </p>
           </div>
-
-          <Tabs defaultValue="nba" className="w-full">
+          
+          <Tabs defaultValue="nba" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger
                 value="nba"
@@ -544,13 +613,37 @@ export default function Page() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="nba" className="mt-0">
-              <EventsGrid events={eventsData.nba} />
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <EventCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : (
+                <EventsGrid events={eventsData.nba} />
+              )}
             </TabsContent>
             <TabsContent value="mlb" className="mt-0">
-              <EventsGrid events={eventsData.mlb} />
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <EventCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : (
+                <EventsGrid events={eventsData.mlb} />
+              )}
             </TabsContent>
             <TabsContent value="nfl" className="mt-0">
-              <EventsGrid events={eventsData.nfl} />
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <EventCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : (
+                <EventsGrid events={eventsData.nfl} />
+              )}
             </TabsContent>
           </Tabs>
         </div>

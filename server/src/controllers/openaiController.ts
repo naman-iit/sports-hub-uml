@@ -30,7 +30,12 @@ export const generateEventSummary = async (
   }
 
   const prompt = `Generate a concise summary for a ${sportType} game between ${homeTeam} and ${awayTeam} on ${date} at ${venue}. 
-  Include a catchy title, a brief summary of what to expect, key players to watch, and 2-3 interesting facts about the matchup.`;
+  Format your response exactly as follows:
+
+  Title: [A catchy title for the game]
+  Summary: [A brief summary of what to expect]
+  Key Players: [List 3-4 key players to watch, one per line starting with -]
+  Interesting Facts: [List 3-4 interesting facts about the teams or matchup, one per line starting with -]`;
 
   try {
     const response = await axios.post<OpenAIResponse>(
@@ -52,7 +57,6 @@ export const generateEventSummary = async (
     const content = response.data.choices[0].message.content;
     
     // Parse the response into structured data
-    // This is a simplified parsing - in a real app, you'd want more robust parsing
     const lines = content.split('\n');
     const title = lines[0].replace('Title:', '').trim();
     const summary = lines[1].replace('Summary:', '').trim();
