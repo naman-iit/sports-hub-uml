@@ -1,6 +1,7 @@
 # Project Setup
 
 This repository contains two main parts:
+Git Repo: https://github.com/naman-iit/sports-hub-uml
 
 1. **Server** (API/backend)
 2. **Next.js App** (frontend)
